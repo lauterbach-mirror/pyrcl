@@ -39,6 +39,8 @@ __DEFAULT_PROTOCOL = "TCP"
 __DEFAULT_TIMEOUT = 60.0
 __DEFAULT_PACKLEN = 1024  # required only for UDP
 
+logger = logging.getLogger("lauterbach.trace32.rcl")
+
 
 def hexversion():
     """The module version as a 32-bit integer.
@@ -53,7 +55,8 @@ def hexversion():
         r"^(?P<major_version>\d+)\."
         r"(?P<minor_version>\d+)\."
         r"(?P<micro_version>\d+)"
-        r"(?:(?P<release_level>a|b|rc)(?P<release_serial>\d+))?$",
+        r"(?:(?P<release_level>a|b|rc)(?P<release_serial>\d+))?"
+        r"(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$",
         VERSION,
     )
     if re_version_match.groupdict()["release_level"] is None:
@@ -279,7 +282,7 @@ class Debugger:
 
     def _cmd(self, cmd: str):
         """Only for internal use! Use 'cmd' without leading underscores instead!"""
-        logging.debug(cmd)
+        logger.debug(cmd)
         try:
             self.__library.t32_executecommand(cmd.encode(), 4096)
         except CommandError as e:
@@ -287,7 +290,7 @@ class Debugger:
 
     def _fnc(self, fnc: str):
         """Only for internal use! Use 'fnc' without leading underscores instead!"""
-        logging.debug(fnc)
+        logger.debug(fnc)
         try:
             result_value, result_type = self.__library.t32_executefunction(fnc)
         except FunctionError as e:

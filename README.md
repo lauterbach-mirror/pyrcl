@@ -2,6 +2,11 @@
 
 ## Release Notes
 
+### v1.0.10
+
+* Added missing functions `library.t32_gettracestate` and `library.t32_readtrace`
+* Changed logger name to "lauterbach.trace32.rcl"
+
 ### v1.0.9
 
 * Fixed error related functions to not use dbg.fnc(), otherwise the error state is reset. Affected functions:

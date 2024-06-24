@@ -48,7 +48,7 @@ Signed
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(-32768, 32767)
 	>>> dbg.memory.write_int16(address=address, value=value)
-	>>> print(value, dbg.memory.read_int8(address=address))
+	>>> print(value, dbg.memory.read_int16(address=address))
 
 
 Unsigned
@@ -60,7 +60,7 @@ Unsigned
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(0, 65535)
 	>>> dbg.memory.write_uint16(address=address, value=value)
-	>>> print(value, dbg.memory.read_uint8(address=address))
+	>>> print(value, dbg.memory.read_uint16(address=address))
 
 
 *******************************
@@ -77,7 +77,7 @@ Signed
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(-2147483648, 2147483647)
 	>>> dbg.memory.write_int32(address=address, value=value)
-	>>> print(value, dbg.memory.read_int8(address=address))
+	>>> print(value, dbg.memory.read_int32(address=address))
 
 
 Unsigned
@@ -89,7 +89,7 @@ Unsigned
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(0, 4294967295)
 	>>> dbg.memory.write_uint32(address=address, value=value)
-	>>> print(value, dbg.memory.read_uint8(address=address))
+	>>> print(value, dbg.memory.read_uint32(address=address))
 
 
 *******************************
@@ -106,7 +106,7 @@ Signed
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(-9223372036854775808, 9223372036854775807)
 	>>> dbg.memory.write_int64(address=address, value=value)
-	>>> print(value, dbg.memory.read_int8(address=address))
+	>>> print(value, dbg.memory.read_int64(address=address))
 
 
 Unsigned
@@ -118,4 +118,4 @@ Unsigned
 	>>> address = dbg.address.from_string('VM:0x0')
 	>>> value = random.randint(0, 18446744073709551615)
 	>>> dbg.memory.write_uint64(address=address, value=value)
-	>>> print(value, dbg.memory.read_uint8(address=address))
+	>>> print(value, dbg.memory.read_uint64(address=address))
