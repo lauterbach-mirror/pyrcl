@@ -125,6 +125,8 @@ class Library:
 
     """
 
+    __LINE_SBLOCK = 4096  # small block mode (backwards compatible)
+
     def __init__(self, *args, **kwargs):
         self._link = Link(**kwargs)
         self._maxpacketsize = self._link.packlen
@@ -757,6 +759,34 @@ class Library:
             # self.raise_error(int_code.T32_ERR_READVAR_ACCESS)
 
         return int.from_bytes(result[:8], byteorder="little")
+    
+    def t32_gettracestate(self, tracetype):
+        payload = struct.pack("<Bs", tracetype, b"\x00")
+
+        result = self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_TRACE_STATE,
+            payload=payload,
+        )
+        state, size, min, max = struct.unpack("<Bxxxiii", result)
+        return state, size, min, max
+
+    def t32_readtrace(self, tracetype, record, n, mask):
+        NUM_BYTES_RECORD = bin(mask).count("1") * 4  # Python3.10 replace this with mask.bit_count()
+        MAX_RECORDS = self.__LINE_SBLOCK // NUM_BYTES_RECORD
+        result = bytearray()
+        num_records_remaining = n
+        while num_records_remaining:
+            num_records = min(num_records_remaining, MAX_RECORDS)
+            payload = struct.pack("<Bxiii", tracetype, record, mask, num_records)
+            result += self.generic_api_call(
+                rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+                opt_arg=RAPI_DSCMD_TRACE_READ,
+                payload=payload,
+            )
+            record += num_records
+            num_records_remaining -= num_records
+        return result
 
     def t32_checkstatenotify(self, callback_parameter):
         """Polls for notification messages and calls callbackfunction"""
