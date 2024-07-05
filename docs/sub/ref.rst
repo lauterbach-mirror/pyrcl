@@ -8,6 +8,7 @@ Reference
 	ref_address
 	ref_breakpoint
 	ref_command
+	ref_directaccess
 	ref_debugger
 	ref_function
 	ref_general

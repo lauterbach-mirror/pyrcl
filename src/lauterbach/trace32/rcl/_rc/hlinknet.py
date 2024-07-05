@@ -3,12 +3,12 @@ import socket
 import struct
 
 from ._error import (
-    ApiConnectionTimeoutError,
     ApiConnectionConfigError,
-    ApiHeaderError,
-    ApiConnectionTransmitError,
-    ApiConnectionSyncError,
     ApiConnectionInitError,
+    ApiConnectionSyncError,
+    ApiConnectionTimeoutError,
+    ApiConnectionTransmitError,
+    ApiHeaderError,
 )
 from .common import align_eight
 

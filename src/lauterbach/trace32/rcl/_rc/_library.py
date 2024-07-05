@@ -1,13 +1,16 @@
 import struct
+import typing
 from collections import namedtuple
 from enum import IntEnum
 
-from ._error import *
 from ._address import Address
 from ._breakpoint import Breakpoint
 from ._command import CommandError
+from ._directaccess import DirectAccessBundleRequest, DirectAccessResult
+from ._error import *
 from ._functions import FunctionError
 from ._memory import MemoryError
+from ._memory_bundle import MemoryAccessBundle, MemoryAccessResult
 from ._register import Register
 from ._symbol import Symbol
 from ._variable import VariableError
@@ -99,7 +102,8 @@ RAPI_DSCMD_LUA_EXECUTE = 0xB0
 RAPI_DSCMD_FLASHFILE_READ = 0xC0
 RAPI_DSCMD_FLASHFILE_WRITE = 0xC1
 RAPI_DSCMD_FLASHFILE_FLUSH = 0xC2
-RAPI_DSCMD_EXP_deprecated = 0xF2
+RAPI_DSCMD_GUI_LOCK = 0xC3
+RAPI_DSCMD_GUI_UNLOCK = 0xC4
 RAPI_DSCMD_EXP = 0xFE
 RAPI_DSCMD_EXTENSION = 0xFF
 
@@ -127,7 +131,8 @@ class Library:
 
     __LINE_SBLOCK = 4096  # small block mode (backwards compatible)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, conn, *args, **kwargs):
+        self.__conn = conn
         self._link = Link(**kwargs)
         self._maxpacketsize = self._link.packlen
 
@@ -315,34 +320,18 @@ class Library:
             recv_data = self._link.receive()
             if not recv_data[0] == T32_ERR_OK:
                 # attempt to extract error message from response
-                try:
+                if len(recv_data) > 10:
                     recv_err_msg_len = int.from_bytes(recv_data[6:10], byteorder="little")
-                    recv_err_msg = recv_data[10 : 10 + recv_err_msg_len].decode()
-                except IndexError:
-                    recv_err_msg = None
-                except UnicodeDecodeError:
+                    try:
+                        recv_err_msg = recv_data[10 : 10 + recv_err_msg_len].decode()
+                    except UnicodeDecodeError:
+                        recv_err_msg = None
+                else:
                     recv_err_msg = None
 
                 self.raise_error(recv_data[0], recv_err_msg)
 
             return recv_data[2:]
-
-    def t32_exp_deprecated(self, cmd, buffer):
-        payload = cmd.to_bytes(2, byteorder="little")
-        payload += buffer
-        try:
-            result = self.generic_api_call(
-                rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
-                opt_arg=RAPI_DSCMD_EXP_deprecated,
-                payload=payload,
-                # to be 100% consistent with dll, need to force length:
-                force_length=len(payload) - 2,
-                force_16bit_length=True,
-            )
-            msg_len = int.from_bytes(result[:2], byteorder="little")
-            return result[4 : 2 + msg_len]
-        except T32_ERR_FN1 as e:
-            raise RegisterError(str(e)) from None
 
     def t32_apilock(self, timeout_ms):
         payload = timeout_ms.to_bytes(4, byteorder="little")
@@ -501,6 +490,17 @@ class Library:
 
         return result
 
+    def t32_transfermemorybundleobj(self, bundle: MemoryAccessBundle) -> list[MemoryAccessResult]:
+        tx_data = bundle.serialize()
+        rx_data = self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_BUNDLE_OBJ_TRANSFER,
+            payload=tx_data,
+            force_length=0,
+        )
+        _, result = bundle.deserialize(rx_data)
+        return result
+
     def t32_readregisterobj(self, register, reg_size=64):
         assert isinstance(register, Register)
         try:
@@ -640,10 +640,14 @@ class Library:
             # self.raise_error(int_code.T32_ERR_EXECUTECOMMAND_FAIL)
 
     def t32_evalgetstring(self) -> str:
-        return self.generic_api_call(
-            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
-            opt_arg=RAPI_DSCMD_EVAL_GETSTRING,
-        ).strip(b"\x00").decode()
+        return (
+            self.generic_api_call(
+                rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+                opt_arg=RAPI_DSCMD_EVAL_GETSTRING,
+            )
+            .strip(b"\x00")
+            .decode()
+        )
 
     def t32_getwindowcontent(self, command, requested, offset, print_code):
 
@@ -759,7 +763,7 @@ class Library:
             # self.raise_error(int_code.T32_ERR_READVAR_ACCESS)
 
         return int.from_bytes(result[:8], byteorder="little")
-    
+
     def t32_gettracestate(self, tracetype):
         payload = struct.pack("<Bs", tracetype, b"\x00")
 
@@ -787,6 +791,40 @@ class Library:
             record += num_records
             num_records_remaining -= num_records
         return result
+
+    def t32_bundledaccess(self, request: DirectAccessBundleRequest) -> list[DirectAccessResult]:
+        rx_data = self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_DAAPI,
+            payload=request.payload,
+            force_16bit_length=True,
+        )
+        _, result = request._deserialize(rx_data)
+        return result
+
+    def t32_guilock(self) -> None:
+        if self.__conn._powerview_software_build_base < 172138:
+            raise NotImplementedError(
+                "Requires PowerView version 172138, current version is "
+                + f"{self.__conn._powerview_software_build_base}--{self.__conn._powerview_software_build}"
+            )
+        self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_GUI_LOCK,
+            payload=b"",
+        )
+
+    def t32_guiunlock(self) -> None:
+        if self.__conn._powerview_software_build_base < 172138:
+            raise NotImplementedError(
+                "Requires PowerView version 172138, current version is "
+                + f"{self.__conn._powerview_software_build_base}--{self.__conn._powerview_software_build}"
+            )
+        self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_GUI_UNLOCK,
+            payload=b"",
+        )
 
     def t32_checkstatenotify(self, callback_parameter):
         """Polls for notification messages and calls callbackfunction"""

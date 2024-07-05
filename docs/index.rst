@@ -16,6 +16,7 @@ lauterbach.trace32.rcl
 
 	sub/installation
 	sub/intro
+	sub/advanced
 	sub/ref
 
 
