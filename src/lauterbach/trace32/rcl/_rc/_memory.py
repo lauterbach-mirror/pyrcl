@@ -1,8 +1,9 @@
-import struct
 import array
+import struct
 
 from ._address import Address
 from ._error import BaseError, InternalError
+from ._memory_bundle import MemoryAccessBundle, MemoryAccessResult
 
 
 class MemoryError(BaseError):
@@ -367,3 +368,27 @@ class MemoryService:
         """
         data = struct.pack("{byteorder}d".format(byteorder=self.__byteorder(byteorder)), value)
         self.write(address, data, width=width)
+
+    def execute_bundle(self, bundle: MemoryAccessBundle) -> list[MemoryAccessResult]:
+        """Execute memory access bundle.
+
+        Args:
+            bundle (MemoryAccessBundle): Memory access bundle to execute.
+
+        Raises:
+            MemoryError: TODO
+            result.error: TODO
+
+        Returns:
+            list[MemoryAccessResult]: List with results.
+        """
+        try:
+            results = self.__conn.library.t32_transfermemorybundleobj(bundle)
+        except InternalError:
+            raise MemoryError from None
+        try:
+            for result in results:
+                if result.error:
+                    raise result.error
+        finally:
+            return results

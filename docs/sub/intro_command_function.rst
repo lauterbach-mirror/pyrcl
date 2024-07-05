@@ -10,8 +10,13 @@ Example: Select CPU and print selected CPU
 
 .. code-block:: python
 
-	>>> dbg.cmd('SYStem.CPU CortexA55')
-	>>> cpu = dbg.fnc('CPU()')
+	>>> dbg.cmd("SYStem.CPU CortexA55")
+	>>> cpu = dbg.fnc("CPU()")
 	>>> print(cpu)
 	CortexA55
 
+CMM scripts must be executed using the :py:attr:`dbg.cmm()<lauterbach.trace32.rcl.Debugger.cmm>` function:
+
+.. code-block:: python
+
+	>>> dbg.cmm("script.cmm")

@@ -13,7 +13,7 @@
 """
 
 
-from lauterbach.trace32.rcl._rc._address import Address
+from ._address import Address
 
 from ._error import BaseError
 

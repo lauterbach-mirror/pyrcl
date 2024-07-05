@@ -2,6 +2,12 @@
 
 ## Release Notes
 
+### v1.1.0
+
+* Drop support for Python 3.6, 3.7, 3.8
+* Add support for memory bundles
+* Add partial support for direct access API
+
 ### v1.0.10
 
 * Added missing functions `library.t32_gettracestate` and `library.t32_readtrace`

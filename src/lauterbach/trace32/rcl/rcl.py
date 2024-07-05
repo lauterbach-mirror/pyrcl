@@ -12,9 +12,11 @@ import typing
 import uuid
 import warnings
 
+from .__version__ import __version__
 from ._rc._address import Address, AddressService
 from ._rc._breakpoint import Breakpoint, BreakpointService
 from ._rc._command import CommandError, CommandService
+from ._rc._directaccess import DirectAccessService
 from ._rc._error import *
 from ._rc._functions import FunctionError, FunctionService
 from ._rc._library import Library
@@ -23,7 +25,6 @@ from ._rc._practice import PracticeError, PracticeMacro, PracticeService
 from ._rc._register import Register, RegisterService
 from ._rc._symbol import Symbol, SymbolService
 from ._rc._variable import Variable, VariableError, VariableService
-from .__version__ import __version__
 
 VERSION = __version__
 REVISION = ""
@@ -222,7 +223,7 @@ class Debugger:
     """
 
     def __init__(self, *, node, port, packlen, protocol, timeout):
-        self.__library = Library(node=node, port=port, packlen=packlen, protocol=protocol, timeout=timeout)
+        self.__library = Library(self, node=node, port=port, packlen=packlen, protocol=protocol, timeout=timeout)
 
         self.address = AddressService(self)
         self.breakpoint = BreakpointService(self)
@@ -233,6 +234,8 @@ class Debugger:
         self.register = RegisterService(self)
         self.symbol = SymbolService(self)
         self.variable = VariableService(self)
+        # added in v1.1
+        self.directaccess = DirectAccessService(self)
 
         self.connect()
         self.check_powerview_version()
@@ -254,16 +257,19 @@ class Debugger:
 
     def check_powerview_version(self):
         # Check version of TRACE32 software:
-        current_build = self.fnc.software_build()
-        current_base = self.fnc.software_build_base()
+        self._powerview_software_build = self.fnc.software_build()
+        self._powerview_software_build_base = self.fnc.software_build_base()
 
-        if current_base < MIN_BASE_POWERVIEW or current_build < MIN_BUILD_POWERVIEW:
+        if (
+            self._powerview_software_build_base < MIN_BASE_POWERVIEW
+            or self._powerview_software_build < MIN_BUILD_POWERVIEW
+        ):
             raise ApiVersionError(
                 "Minimum required software version: {min_build}:{min_base}, current version {curr_build}:{curr_base} (build:base)".format(
                     min_build=MIN_BUILD_POWERVIEW,
                     min_base=MIN_BASE_POWERVIEW,
-                    curr_build=current_build,
-                    curr_base=current_base,
+                    curr_build=self._powerview_software_build,
+                    curr_base=self._powerview_software_build_base,
                 )
             )
 
@@ -274,6 +280,7 @@ class Debugger:
         #     raise ApiVersionError(version_result) from None
 
     def disconnect(self):
+        """Disconnect from PowerView."""
         self.__library.t32_exit()
 
     @property
@@ -472,7 +479,7 @@ class Debugger:
 class Window:
     """
     Helper class for opening, position, sizing, closing, ... TRACE32 windows.
-    
+
     TODO WinPage support
     """
 
@@ -491,7 +498,7 @@ class Window:
     ):
         """
         Creates a window object.
-        
+
         :param window: Window, e.g. "Data.dump /SpotLight"
         :param left: x-coordinate
         :param up: y-coordinate
@@ -520,9 +527,9 @@ class Window:
     def __int_to_str(value: typing.Union[None, int, str]) -> str:
         """
         Converts int values to a TRACE32 compatible str (leading dot). None is converted to '', str arguments are returned unchanged.
-        
-        :param value: 
-        :return: 
+
+        :param value:
+        :return:
         """
         return "" if value is None else value if isinstance(value, str) else "{}.".format(value)
 
@@ -530,28 +537,28 @@ class Window:
     def __decimal_to_str(value: typing.Union[None, decimal.Decimal, str]) -> str:
         """
         Converts decimal.Decimal values to a TRACE32 compatible str (leading dot). None is converted to '', str arguments are returned unchanged.
-        
-        :param value: 
-        :return: 
+
+        :param value:
+        :return:
         """
         return "" if value is None else value if isinstance(value, str) else "{:f}".format(value)
 
     def __exists(self, connection):
         """
         Checks whether a window with the same name already exists.
-        
-        :param connection: 
-        :return: 
+
+        :param connection:
+        :return:
         """
         return False if connection.f.window_exist(self.__name) == 0 else True
 
     def open(self, connection):
         """
         Opens the window (window-name == uuid).
-        
+
         Before opening the window checks whether a window with the same window-name already exists, and if yes raises a WindowError.
-        :param connection: 
-        :return: 
+        :param connection:
+        :return:
         """
         if self.__exists(connection) is True:
             raise WindowError("{} already exists".format(self.__name))
@@ -571,10 +578,10 @@ class Window:
     def close(self, connection):
         """
         Closes the window (window-name == uuid).
-        
+
         Before closing the window checks whether a window with the same window-name exists, and if no raises a WindowError.
-        :param connection: 
-        :return: 
+        :param connection:
+        :return:
         """
         if self.__exists(connection) is False:
             raise WindowError("{} not found".format(self.__name))
@@ -583,10 +590,10 @@ class Window:
     def query(self, connection):
         """
         Queries the window parameter.
-        
+
         Before querying the window checks whether a window with the same window-name exists, and if no raises a WindowError.
-        :param connection: 
-        :return: 
+        :param connection:
+        :return:
         """
         if self.__exists(connection) is False:
             raise WindowError("{} not found".format(self.__name))
@@ -618,17 +625,19 @@ class Window:
     def update(self, connection):
         """
         Updates the window parameter (only size at the moment).
-        
+
         Before updating the window checks whether a window with the same window-name exists, and if no raises a WindowError.
-        :param connection: 
-        :return: 
+        :param connection:
+        :return:
         """
         if self.__exists(connection) is False:
             raise WindowError("{} not found".format(self.__name))
         if self.__hsize is not None and self.__vsize is not None:
             connection.cmd(
                 "WinRESIZE {hsize},{vsize},{name}".format(
-                    hsize=self.__int_to_str(self.__hsize), vsize=self.__int_to_str(self.__vsize), name=self.__name,
+                    hsize=self.__int_to_str(self.__hsize),
+                    vsize=self.__int_to_str(self.__vsize),
+                    name=self.__name,
                 )
             )
 
