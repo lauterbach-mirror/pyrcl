@@ -2,6 +2,10 @@
 
 ## Release Notes
 
+### v1.1.1
+
+* Fixed memory bundles
+
 ### v1.1.0
 
 * Drop support for Python 3.6, 3.7, 3.8

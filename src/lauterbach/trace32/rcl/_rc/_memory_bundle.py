@@ -47,6 +47,7 @@ class MemoryAccessResult:
         data (Optional[bytes]): Data if data was returned, None otherwise.
         error (Optional[Exception], optional): Exception when an error occurred, None otherwise.
     """
+
     data: Optional[bytes] = None
     error: Optional[Exception] = None
 
@@ -61,7 +62,7 @@ class MemoryReadAccess(MemoryAccess):
         tmp = (
             bytearray()
             + struct.pack("<HH", MemoryAccessBundleType.READ, self.length)
-            + self.address.serialize(width=1)[1]
+            + self.address.serialize(width=self.width)[1]
         )
         return tmp
 
@@ -89,7 +90,7 @@ class MemoryWriteAccess(MemoryAccess):
         tmp = (
             bytearray()
             + struct.pack("<HH", MemoryAccessBundleType.WRITE, len(self.data))
-            + self.address.serialize(width=1)[1]
+            + self.address.serialize(width=self.width)[1]
             + self.data
         )
         if len(self.data) % 2:
@@ -122,7 +123,7 @@ class MemoryReadWriteAccess(MemoryAccess):
         tmp = (
             bytearray()
             + struct.pack("<HH", MemoryAccessBundleType.READWRITE, len(self.data))
-            + self.address.serialize(width=1)[1]
+            + self.address.serialize(width=self.width)[1]
             + self.data
             + self.mask
         )
@@ -182,7 +183,7 @@ class MemoryAccessBundle:
         for access in self.access_list:
             data += access.serialize()
         data += b"XX"
-        struct.pack_into("<H", data, 0, len(data))  # overwrite data[0:2]
+        struct.pack_into("<H", data, 0, 4 + len(data))  # overwrite data[0:2]
         if len(data) > _EMU_CBMAXDATASIZE:
             raise NotImplementedError("splitting into multiple bundles not yet implemented")
         return data
