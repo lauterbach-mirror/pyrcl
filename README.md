@@ -2,6 +2,10 @@
 
 ## Release Notes
 
+### v1.1.3
+
+* Added support for readthedocs
+
 ### v1.1.2
 
 * Fixed an issue where a TCP connection closed by the peer was not properly detected
