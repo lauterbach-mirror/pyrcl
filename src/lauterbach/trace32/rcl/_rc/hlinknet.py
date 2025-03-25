@@ -177,8 +177,7 @@ class CommunicationUdp(CommunicationBase):
 
             try:
                 self._socket.sendto(magic_sequence, 0, (self._hostname, self._port))
-
-                data = self._socket.recv(self._packlen)
+                data, sender_info = self._socket.recvfrom(self._packlen)
             except Exception as e:
                 raise ApiConnectionInitError(e) from None
 
@@ -514,8 +513,10 @@ class CommunicationTcp(CommunicationBase):
         if self._socket is None:
             raise ValueError
         # read data from socket and append it to the socket content
-        message_received, sender_info = self._socket.recvfrom(self._packlen)
-        self.socket_content += message_received
+        data = self._socket.recv(self._packlen)
+        if not data:
+            raise ConnectionError("Connection closed by peer")
+        self.socket_content += data
         self.extract_message()
 
     def receive_notify_message(self):
@@ -526,17 +527,19 @@ class CommunicationTcp(CommunicationBase):
 
         except queue.Empty:
             try:
-                packet_received, sender_info = self._socket.recvfrom(self._packlen)
-                msg_len = int.from_bytes(packet_received[:4], byteorder="little")
-                msg_type = int.from_bytes(packet_received[4:8], byteorder="little")
-                msg_data = packet_received[8 : 8 + msg_len]
-            except Exception:
-                # aparently there is no notification
+                data = self._socket.recv(self._packlen)
+                if not data:
+                    raise ConnectionError("Connection closed by peer")
+
+            except socket.timeout:
+                # socket timeout while waiting for the notification
                 return None
 
-            else:
-                if not msg_type == T32_NETTCP_RCL_NOTIFY:
-                    raise ApiHeaderError("TCP packet does not contain Notification")
+            msg_len = int.from_bytes(data[:4], byteorder="little")
+            msg_type = int.from_bytes(data[4:8], byteorder="little")
+            msg_data = data[8 : 8 + msg_len]
+            if not msg_type == T32_NETTCP_RCL_NOTIFY:
+                raise ApiHeaderError("TCP packet does not contain Notification")
 
         return msg_data
 
