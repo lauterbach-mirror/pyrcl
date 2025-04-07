@@ -1,21 +1,11 @@
 import array
 import struct
+from typing import Optional
 
 from ._address import Address
 from ._error import BaseError, InternalError
 from ._memory_bundle import MemoryAccessBundle, MemoryAccessResult
-
-
-class MemoryError(BaseError):
-    pass
-
-
-class MemoryReadError(MemoryError):
-    pass
-
-
-class MemoryWriteError(MemoryError):
-    pass
+from ._memory_exceptions import MemoryReadAccessError, MemoryWriteAccessError
 
 
 class MemoryService:
@@ -47,18 +37,30 @@ class MemoryService:
         try:
             return self.__conn.library.t32_readmemoryobj(address, length, width=width)
         except InternalError:
-            raise MemoryReadError from None
+            raise MemoryReadAccessError from None
 
     def _write(self, address: Address, data, *, length=None, width=None):
         if length is None:
             length = len(data)
         try:
             self.__conn.library.t32_writememoryobj(data, address, length, width=width)
-        except MemoryError:
-            raise MemoryWriteError from None
+        except InternalError:
+            raise MemoryWriteAccessError from None
 
-    def read(self, *args, **kwargs):
-        return self._read(*args, **kwargs)
+    def read(self, address: Address, *, length: int, width: Optional[int] = None) -> bytes:
+        """Read data at address.
+
+        The raw data is returned in an array of bytes.
+
+        Args:
+            address: Address of the access.
+            length: Length of the read access in ``byte``.
+            width: Width of the data access. Defaults to None.
+
+        Raises:
+            MemoryReadError: Memory access failed.
+        """
+        return self._read(address=address, length=length, width=width)
 
     def read_int8(self, address: Address, *, width=1) -> int:
         """Read signed 8-bit value from address and return result.
@@ -226,8 +228,22 @@ class MemoryService:
         buffer = self.read(address, length=8, width=width)
         return struct.unpack("{byteorder}d".format(byteorder=self.__byteorder(byteorder)), buffer)[0]
 
-    def write(self, *args, **kwargs):
-        return self._write(*args, **kwargs)
+    def write(
+        self, address: Address, data: bytes, *, length: Optional[int] = None, width: Optional[int] = None
+    ) -> None:
+        """Write data to address.
+
+        Args:
+            address: Address of the access.
+            data: Data to write.
+            length:
+                Length of the write access in ``byte`` or none to infer the length from ``len(data)``. Defaults to None.
+            width: Width of the data access. Defaults to None.
+
+        Raises:
+            MemoryWriteAccessError: Memory access failed.
+        """
+        return self._write(address=address, data=data, length=length, width=width)
 
     def write_int8(self, address, value, *, width=1):
         """Write signed 8-bit value to address.
@@ -376,7 +392,7 @@ class MemoryService:
             bundle (MemoryAccessBundle): Memory access bundle to execute.
 
         Raises:
-            MemoryError: TODO
+            MemoryAccessError: TODO
             result.error: TODO
 
         Returns:
@@ -385,7 +401,7 @@ class MemoryService:
         try:
             results = self.__conn.library.t32_transfermemorybundleobj(bundle)
         except InternalError:
-            raise MemoryError from None
+            raise MemoryAccessError from None
         try:
             for result in results:
                 if result.error:

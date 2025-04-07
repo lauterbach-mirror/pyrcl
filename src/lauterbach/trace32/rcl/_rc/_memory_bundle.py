@@ -7,22 +7,11 @@ from enum import IntEnum
 from typing import List, Optional, Union
 
 from ._address import Address
+from ._memory_exceptions import MemoryReadAccessError, MemoryWriteAccessError
 
 Buffer = Union[bytes, bytearray, memoryview]
 
 _EMU_CBMAXDATASIZE = 0x3C00
-
-
-class MemoryAccessError(Exception):
-    pass
-
-
-class MemoryReadAccessError(MemoryAccessError):
-    pass
-
-
-class MemoryWriteAccessError(MemoryAccessError):
-    pass
 
 
 class MemoryAccessBundleType(IntEnum):

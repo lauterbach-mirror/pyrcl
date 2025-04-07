@@ -2,6 +2,12 @@
 
 ## Release Notes
 
+### v1.1.4
+
+* Marked `MemoryError` as deprecated, use `MemoryAccessError` instead
+* Marked `MemoryReadError` as deprecated, use `MemoryReadAccessError` instead
+* Marked `MemoryWriteError` as deprecated, use `MemoryWriteAccessError` instead
+
 ### v1.1.3
 
 * Added support for readthedocs

@@ -4,6 +4,25 @@ Memory
 
 Memory access is provided by the :py:attr:`MemoryService<lauterbach.trace32.rcl.MemoryService>` class. Each debugger has its own instance, which can be used through its :py:attr:`memory<lauterbach.trace32.rcl.Debugger.memory>` attribute.
 
+.. note::
+
+    The following examples use the VM access class. This memory is always available. More information is available in `glossary.pdf#TRACE32 Virtual Memory <https://www.lauterbach.com/pdf/glossary.pdf#TRACE32%20Virtual%20Memory>`__.
+    Other access classes like AXI required to the debugger to be in prepare (`SYStem.Mode Prepare`) mode or in case of D (data) and P (program) attached (`SYStem.Mode Attach / Up`) to the target.
+
+
+********************************
+Reading / Writing custom buffers
+********************************
+
+.. code-block:: pycon
+
+	>>> address = dbg.address.from_string('VM:0x0')
+	>>> buffer = b'\x12\x34\x56\x78'
+	>>> dbg.memory.write(address, buffer, length=len(buffer))
+	>>> read_buffer = dbg.memory.read(address, length=len(buffer))
+	>>> print("write buffer: {}".format(buffer))
+	>>> print("read buffer:  {}".format(read_buffer))
+
 
 ******************************
 Reading / Writing 8-bit values
@@ -13,7 +32,7 @@ Reading / Writing 8-bit values
 Signed
 ======
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -25,7 +44,7 @@ Signed
 Unsigned
 ========
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -42,7 +61,7 @@ Reading / Writing 16-bit values
 Signed
 ======
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -54,7 +73,7 @@ Signed
 Unsigned
 ========
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -71,7 +90,7 @@ Reading / Writing 32-bit values
 Signed
 ======
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -83,7 +102,7 @@ Signed
 Unsigned
 ========
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -100,7 +119,7 @@ Reading / Writing 64-bit values
 Signed
 ======
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')
@@ -112,7 +131,7 @@ Signed
 Unsigned
 ========
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> import random
 	>>> address = dbg.address.from_string('VM:0x0')

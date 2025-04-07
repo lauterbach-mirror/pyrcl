@@ -14,7 +14,7 @@ Create Memory Bundle
 
 First a bundle needs to be created and read, write and/or read-write operation added to it: 
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> bundle = pyrcl.MemoryAccessBundle()
 	>>> bundle.add_write(addr, data)
@@ -30,7 +30,7 @@ Execute Memory Bundle
 
 Memory bundles can be executed using :code:`dbg.memory.execute_bundle(bundle)`.
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> try:
 	>>> 	results = dbg.memory.execute_bundle(bundle)
@@ -39,9 +39,9 @@ Memory bundles can be executed using :code:`dbg.memory.execute_bundle(bundle)`.
 
 A list of :code:`pyrcl.MemoryAccessResult` for each access added to the bundle is returned.
 
-.. code-block:: python
+.. code-block:: pycon
 
-	for i, result in enumerate(results):
-		print(i, type(result), result.error, result.data)
+	>>> for i, result in enumerate(results):
+	>>> 	print(i, type(result), result.error, result.data)
 
 Each result must checked for :code:`result.error`, the data can be accessed by :code:`result.data`.

@@ -9,8 +9,8 @@ from ._command import CommandError
 from ._directaccess import DirectAccessBundleRequest, DirectAccessResult
 from ._error import *
 from ._functions import FunctionError
-from ._memory import MemoryError
 from ._memory_bundle import MemoryAccessBundle, MemoryAccessResult
+from ._memory_exceptions import MemoryAccessError
 from ._register import Register
 from ._symbol import Symbol
 from ._variable import VariableError
@@ -449,12 +449,16 @@ class Library:
                 buffer[chunk_from:chunk_to],
             )
 
-            self.generic_api_call(
-                rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
-                opt_arg=RAPI_DSCMD_MEMORY_OBJ_WRITE,
-                payload=payload,
-                force_length=address_params_length + 6,
-            )
+            try:
+                self.generic_api_call(
+                    rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+                    opt_arg=RAPI_DSCMD_MEMORY_OBJ_WRITE,
+                    payload=payload,
+                    force_length=address_params_length + 6,
+                )
+            except T32_ERR_FN1:  # T32_ERR_READMEMOBJ_PARAFAIL
+                raise MemoryAccessError("wrong parameters") from None
+
             remaining_size -= chunk_size
 
     def t32_readmemoryobj(self, address, length, *, width=None):
@@ -478,12 +482,11 @@ class Library:
                     payload=payload,
                     force_length=address_params_length + 6,
                 )
-            except T32_ERR_FN1:
-                raise MemoryError() from None
-                # self.raise_error(int_code.T32_ERR_READMEMOBJ_PARAFAIL)
+            except T32_ERR_FN1:  # T32_ERR_READMEMOBJ_PARAFAIL
+                raise MemoryAccessError("wrong parameters") from None
 
             if received is None:
-                raise MemoryError()
+                raise MemoryAccessError()
 
             result += received[:chunk_size]
             remaining_size -= chunk_size
@@ -1310,22 +1313,22 @@ error_code_exception_mapping = {
     int_code.T32_ERR_READMEMOBJ_PARAFAIL: {
         "name": "T32_ERR_READMEMOBJ_PARAFAIL",
         "msg": "T32_ReadMemoryObj: wrong parameters",
-        "exception": MemoryError,
+        "exception": MemoryAccessError,
     },
     int_code.T32_ERR_WRITEMEMOBJ_PARAFAIL: {
         "name": "T32_ERR_WRITEMEMOBJ_PARAFAIL",
         "msg": "T32_WriteMemoryObj: wrong parameters",
-        "exception": MemoryError,
+        "exception": MemoryAccessError,
     },
     int_code.T32_ERR_TRANSFERMEMOBJ_PARAFAIL: {
         "name": "T32_ERR_TRANSFERMEMOBJ_PARAFAIL",
         "msg": "T32_TransferMemoryBundleObj: wrong parameters",
-        "exception": MemoryError,
+        "exception": MemoryAccessError,
     },
     int_code.T32_ERR_TRANSFERMEMOBJ_TRANSFERFAIL: {
         "name": "T32_ERR_TRANSFERMEMOBJ_TRANSFERFAIL",
         "msg": "T32_TransferMemoryBundleObj: transfer failed",
-        "exception": MemoryError,
+        "exception": MemoryAccessError,
     },
     int_code.T32_ERR_READVAR_ALLOC: {
         "name": "T32_ERR_READVAR_ALLOC",

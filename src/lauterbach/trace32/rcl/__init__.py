@@ -13,10 +13,14 @@ from ._rc._directaccess import (
 from ._rc._error import *
 from ._rc._functions import FunctionError, FunctionService
 from ._rc._memory import MemoryService
-from ._rc._memory_bundle import (
-    MemoryAccessBundle,
+from ._rc._memory_bundle import MemoryAccessBundle, MemoryAccessResult
+from ._rc._memory_exceptions import (
     MemoryAccessError,
-    MemoryAccessResult,
+    MemoryError,
+    MemoryReadAccessError,
+    MemoryReadError,
+    MemoryWriteAccessError,
+    MemoryWriteError,
 )
 from ._rc._practice import PracticeError, PracticeMacro, PracticeService
 from ._rc._register import Register, RegisterService

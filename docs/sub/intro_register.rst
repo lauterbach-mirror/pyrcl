@@ -13,7 +13,7 @@ Reading Registers
 Single Register
 ===============
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> reg = dbg.register.read(name='PC')
 	>>> print(reg)
@@ -22,18 +22,18 @@ Single Register
 Multiple Registers
 ==================
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> names = ["R{}".format(i) for i in range(8)]
 	>>> regs = dbg.register.read_by_names(names=names)
-	>>> for reg in reg:
-	>>>     print(reg)
+	>>> for reg in regs:
+	...     print(reg)
 
 
 FPU Register
 ============
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> reg = dbg.register.read(name='F0', unit="FPU")
 	>>> print(reg)
@@ -47,7 +47,7 @@ Writing Registers
 Single Register
 ===============
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> dbg.register.write(name='R0', value=0)
 
@@ -55,7 +55,7 @@ Single Register
 Multiple Registers
 ==================
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> names = ["R{}".format(i) for i in range(4)]
 	>>> values = [0x12, 0x34, 0x56, 0x78]
@@ -65,6 +65,6 @@ Multiple Registers
 FPU Register
 ============
 
-.. code-block:: python
+.. code-block:: pycon
 
 	>>> dbg.register.write(name='F0', value=1.234, unit="FPU")
