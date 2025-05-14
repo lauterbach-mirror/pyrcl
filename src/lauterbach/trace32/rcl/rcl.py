@@ -360,7 +360,8 @@ class Debugger:
                 - 0: Don't poll for script to finish (non-blocking)
 
         Raises:
-            PracticeError: If script execution took longer than timeout.
+            PracticeError: If an error during execution occurs.
+            TimeoutError: If script execution took longer than timeout.
         """
 
         stack_depth_pre = self.fnc("PRACTICE.SD()")
