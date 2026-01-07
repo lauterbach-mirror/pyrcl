@@ -1,34 +1,59 @@
+from __future__ import annotations  # required until python 3.11
+
 import enum
 import struct
-from typing import List
+from typing import List, Optional
 
 from ._address import Address
 from ._error import BreakpointError
 
 
 class Breakpoint:
-    """Breakpoint object
+    """Breakpoint object.
 
-    Detailed information is available in `general_ref_b.pdf <http://lauterbach.com/pdf/general_ref_b.pdf>`__ (chapter on
-    "Break.Set").
+    Detailed information is available in `general_ref_b.pdf <http://lauterbach.com/pdf/general_ref_b.pdf>`__ (see chapter on "Break.Set").
     """
 
-    def __init__(self, conn, *, action=None, address=None, core=None, size=None, type_=None, impl=None, enabled=True):
+    def __init__(
+        self,
+        conn,
+        *,
+        address: Optional[Address] = None,
+        size: Optional[int] = None,
+        type_: Optional[Breakpoint.Type] = None,  # noqa: DAR102 (darglint does not like `type_`, which sphinx needs)
+        impl: Optional[Breakpoint.Impl] = None,
+        action: Optional[Breakpoint.Action] = None,
+        core: Optional[int] = None,
+        enabled: bool = True,
+    ) -> None:
+        """
+        Args:
+            conn: The Debugger.
+            address: Breakpoint address. Defaults to ``None``.
+            size: Size of the breakpoint in bytes. Defaults to ``None``.
+            `type_`: Breakpoint type. Defaults to ``None``.
+            impl: Breakpoint implementation. Defaults to ``None``.
+            action: Breakpoint action. Defaults to ``None``.
+            core: Target core for the breakpoint. Defaults to ``None``.
+            enabled: ``False`` corresponds to ``Break.Set <address> /DISable``. Defaults to ``True``.
+        """
         self.__conn = conn
-        self.action = action
         self.address = address
-        self.core = core
-        self.enabled = enabled
-        self.impl = impl
         self.size = size
         self.type_ = type_
+        self.impl = impl
+        self.action = action
+        self.core = core
+        self.enabled = enabled
 
     def __str__(self):
-        return "{{address: {}, type_: {}, impl: {}, action: {}, enabled: {}}}".format(
-            str(self.__address),
+        return "{{address: {}, size: {}, type_: {}, impl: {}, action: {}, core: {}, enabled: {}}}".format(
+            "None" if self.__address is None else self.__address,
+            "None" if self.__size is None else self.__size,
             "None" if self.__type is None else self.__type.name,
             "None" if self.__impl is None else self.__impl.name,
             "None" if self.__action is None else self.__action.name,
+            "None" if self.__core is None else self.__core,
             "True" if self.__enabled else "False",
         )
 
@@ -293,13 +318,34 @@ class BreakpointService:
 
         return bps
 
-    def set(self, *args, **kwargs) -> Breakpoint:
+    def set(
+        self,
+        *,
+        address: Optional[Address] = None,
+        size: Optional[int] = None,
+        type_: Optional[Breakpoint.Type] = None,  # noqa: DAR102 (darglint does not like `type_`, which sphinx needs)
+        impl: Optional[Breakpoint.Impl] = None,
+        action: Optional[Breakpoint.Action] = None,
+        core: Optional[int] = None,
+        enabled: bool = True,
+    ) -> Breakpoint:
         """Set breakpoint
+
+        See :class:`Breakpoint` for parameter documentation.
 
         Returns:
             Breakpoint: Result
         """
-        return Breakpoint(self.__conn, *args, **kwargs).set()
+        return Breakpoint(
+            self.__conn,
+            address=address,
+            size=size,
+            type_=type_,
+            impl=impl,
+            action=action,
+            core=core,
+            enabled=enabled,
+        ).set()
 
     def list(self) -> breakpoint_list:
         """

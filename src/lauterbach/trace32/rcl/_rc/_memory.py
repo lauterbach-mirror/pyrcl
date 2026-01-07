@@ -5,7 +5,11 @@ from typing import Optional
 from ._address import Address
 from ._error import BaseError, InternalError
 from ._memory_bundle import MemoryAccessBundle, MemoryAccessResult
-from ._memory_exceptions import MemoryReadAccessError, MemoryWriteAccessError
+from ._memory_exceptions import (
+    MemoryAccessError,
+    MemoryReadAccessError,
+    MemoryWriteAccessError,
+)
 
 
 class MemoryService:
@@ -388,23 +392,20 @@ class MemoryService:
     def execute_bundle(self, bundle: MemoryAccessBundle) -> list[MemoryAccessResult]:
         """Execute memory access bundle.
 
+        All accesses are executed, even if some fail. It's the caller's responsibility to check each `MemoryAccessResult`'s `error` attribute.
+
         Args:
             bundle (MemoryAccessBundle): Memory access bundle to execute.
 
+        Returns:
+            list[MemoryAccessResult]: List of results, one per command in the bundle.
+
         Raises:
             MemoryAccessError: TODO
-            result.error: TODO
-
-        Returns:
-            list[MemoryAccessResult]: List with results.
         """
         try:
             results = self.__conn.library.t32_transfermemorybundleobj(bundle)
         except InternalError:
             raise MemoryAccessError from None
-        try:
-            for result in results:
-                if result.error:
-                    raise result.error
-        finally:
-            return results
+
+        return results

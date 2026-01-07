@@ -87,6 +87,8 @@ RAPI_DSCMD_ANALYZER_STATE = 0x80
 RAPI_DSCMD_ANALYZER_READ = 0x81
 RAPI_DSCMD_TRACE_STATE = 0x82
 RAPI_DSCMD_TRACE_READ = 0x83
+RAPI_DSCMD_TRACE_STATE_64 = 0x84
+RAPI_DSCMD_TRACE_READ_64 = 0x85
 RAPI_DSCMD_DAAPI = 0x92
 RAPI_DSCMD_DAAPI_HOLD = 0x93
 RAPI_DSCMD_API_LOCK = 0x94
@@ -767,9 +769,10 @@ class Library:
 
         return int.from_bytes(result[:8], byteorder="little")
 
-    def t32_gettracestate(self, tracetype):
-        payload = struct.pack("<Bs", tracetype, b"\x00")
+    def t32_gettracestate(self, tracetype: int) -> tuple[int, int, int, int]:
+        assert 0 <= tracetype <= 0xFF
 
+        payload = struct.pack("<Bs", tracetype, b"\x00")
         result = self.generic_api_call(
             rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
             opt_arg=RAPI_DSCMD_TRACE_STATE,
@@ -778,21 +781,62 @@ class Library:
         state, size, min, max = struct.unpack("<Bxxxiii", result)
         return state, size, min, max
 
-    def t32_readtrace(self, tracetype, record, n, mask):
+    def t32_gettracestate64(self, tracetype: int) -> tuple[int, int, int, int]:
+        assert 0 <= tracetype <= 0xFF
+
+        payload = struct.pack("<Bs", tracetype, b"\x00")
+        result = self.generic_api_call(
+            rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+            opt_arg=RAPI_DSCMD_TRACE_STATE_64,
+            payload=payload,
+        )
+        state, size, min, max = struct.unpack("<Bxxxqqq", result)
+        return state, size, min, max
+
+    def t32_readtrace(self, tracetype: int, start_record: int, num_records: int, mask: int) -> bytearray:
+        assert 0 <= tracetype <= 0xFF
+        assert -(1 << 31) <= start_record < (1 << 31)
+        assert 0 <= num_records
+        assert 0 <= mask < (1 << 32)
+
         NUM_BYTES_RECORD = bin(mask).count("1") * 4  # Python3.10 replace this with mask.bit_count()
         MAX_RECORDS = self.__LINE_SBLOCK // NUM_BYTES_RECORD
         result = bytearray()
-        num_records_remaining = n
+        num_records_remaining = num_records
         while num_records_remaining:
             num_records = min(num_records_remaining, MAX_RECORDS)
-            payload = struct.pack("<Bxiii", tracetype, record, mask, num_records)
+            payload = struct.pack("<BxiiH", tracetype, start_record, mask, num_records)
             result += self.generic_api_call(
                 rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
                 opt_arg=RAPI_DSCMD_TRACE_READ,
                 payload=payload,
             )
-            record += num_records
+            start_record += num_records
             num_records_remaining -= num_records
+
+        return result
+
+    def t32_readtrace64(self, tracetype: int, start_record: int, num_records: int, mask: int) -> bytearray:
+        assert 0 <= tracetype <= 0xFF
+        assert -(1 << 63) <= start_record < (1 << 63)
+        assert 0 <= num_records
+        assert 0 <= mask < (1 << 64)
+
+        NUM_BYTES_RECORD = bin(mask).count("1") * 4  # Python3.10 replace this with mask.bit_count()
+        MAX_RECORDS = self.__LINE_SBLOCK // NUM_BYTES_RECORD
+        result = bytearray()
+        num_records_remaining = num_records
+        while num_records_remaining:
+            num_records = min(num_records_remaining, MAX_RECORDS)
+            payload = struct.pack("<BxqqH", tracetype, start_record, mask, num_records)
+            result += self.generic_api_call(
+                rapi_cmd=RAPI_CMD_DEVICE_SPECIFIC,
+                opt_arg=RAPI_DSCMD_TRACE_READ_64,
+                payload=payload,
+            )
+            start_record += num_records
+            num_records_remaining -= num_records
+
         return result
 
     def t32_bundledaccess(self, request: DirectAccessBundleRequest) -> list[DirectAccessResult]:

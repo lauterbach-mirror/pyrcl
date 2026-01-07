@@ -7,7 +7,11 @@ from enum import IntEnum
 from typing import List, Optional, Union
 
 from ._address import Address
-from ._memory_exceptions import MemoryReadAccessError, MemoryWriteAccessError
+from ._memory_exceptions import (
+    MemoryAccessError,
+    MemoryReadAccessError,
+    MemoryWriteAccessError,
+)
 
 Buffer = Union[bytes, bytearray, memoryview]
 
@@ -124,7 +128,7 @@ class MemoryReadWriteAccess(MemoryAccess):
             data = buffer[2 : 2 + self.length]
             return buffer[2 + self.length :], MemoryAccessResult(data, None)
         else:
-            error = MemoryWriteAccessError(f"memory error at address {self.address}")
+            error = MemoryAccessError(f"memory error at address {self.address}")
             return buffer[2:], MemoryAccessResult(None, error)
 
 

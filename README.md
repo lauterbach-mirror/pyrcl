@@ -2,6 +2,12 @@
 
 ## Release Notes
 
+### v1.1.5
+
+* Fixed `Breakpoint` string representation to include missing `size` and `core` fields
+* Fixed `library.t32_readtrace` encoding issue
+* Added new functions `library.t32_gettracestate64` and `library.t32_readtrace64` for larger trace sizes
+
 ### v1.1.4
 
 * Marked `MemoryError` as deprecated, use `MemoryAccessError` instead

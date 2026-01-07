@@ -336,7 +336,8 @@ class Debugger:
         elif result_type == 0x0400:  # time
             return float(result_value[:-1])
         elif result_type == 0x0800:  # time range
-            return [float(tv[:-1]) for tv in result_value.split("--")]
+            # replace -- with .., -- was old style, can be removed in v2.0
+            return [float(tv[:-1]) for tv in result_value.replace("--", "..").split("..")]
         elif result_type == 0x4000:  # TODO bitmask
             return str(result_value)
         elif result_type == 0x8000:  # empty

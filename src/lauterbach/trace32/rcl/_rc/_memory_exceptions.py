@@ -37,13 +37,13 @@ class MemoryAccessError(MemoryError):
     pass
 
 
-class MemoryReadAccessError(MemoryReadError):
+class MemoryReadAccessError(MemoryAccessError, MemoryReadError):
     """Memory read access error"""
 
     pass
 
 
-class MemoryWriteAccessError(MemoryWriteError):
+class MemoryWriteAccessError(MemoryAccessError, MemoryWriteError):
     """Memory write access error"""
 
     pass

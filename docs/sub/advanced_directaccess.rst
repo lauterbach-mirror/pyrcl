@@ -44,9 +44,11 @@ Example: Read the IDCODE
 		access = pyrcl.DirectAccessShiftRaw(num_bits=4, tms=b"\x02")
 		bundle.add_access(access)
 		# Read IDCODE
-		access = pyrcl.DirectAccessShiftRaw(num_bits=32, tdo=True, options=pyrcl.DirectAccessShiftRawOptions(lasttms_one=True)
+		access = pyrcl.DirectAccessShiftRaw(
+			num_bits=32, tdo=True, options=pyrcl.DirectAccessShiftRawOptions(lasttms_one=True)
+		)
 		bundle.add_access(access)
 		# Execute bundle
 		results = dbg.directaccess.execute(bundle)
 		# Return IDCODE
-		return int.from_bytes(result[-1].tdo, byteorder="little")
+		return int.from_bytes(results[-1].tdo, byteorder="little")
